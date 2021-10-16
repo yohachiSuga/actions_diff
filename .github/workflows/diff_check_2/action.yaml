@@ -1,0 +1,27 @@
+name: 'contains diff check'
+description: 'return true if git diff contains inputs.target_list'
+inputs:
+  head_ref:
+    description: 'head ref'
+    required: false 
+    default: '$GITHUB_HEAD_REF'
+  base_ref:
+    description: 'base ref'
+    required: false 
+    default: '$GITHUB_BASE_REF'
+outputs:
+  diff:
+    description: "git diff string. a delimiter is comma."
+    value: ${{ steps.check_diff.outputs.diff}}
+runs:
+  using: "composite"
+  steps:
+    - name: "check diff"
+      shell: bash
+      id: check_diff
+      run: |
+          target_list=${{ inputs.target_list }}
+          github_head_ref=${{ inputs.head_ref }}
+          github_base_ref=${{ inputs.base_ref }}
+          diff_list=`git diff --name-only remotes/origin/$github_head_ref remotes/origin/$github_base_ref | sed -ze 's/\n/,/g'`
+          echo "::set-output name=diff::$diff_list"
