@@ -1,0 +1,46 @@
+name: 'contains diff check'
+description: 'return true if git diff contains inputs.target_list'
+inputs:
+  who-to-greet:  # id of input
+    description: 'Who to greet'
+    required: true
+    default: 'World'
+  head_ref:
+    description: 'head ref'
+    required: false 
+    default: '$GITHUB_HEAD_REF'
+  base_ref:
+    description: 'base ref'
+    required: false 
+    default: '$GITHUB_BASE_REF'
+  target_list:
+    description: 'target list. delimiter is comma.'
+    required: false 
+    default: ''
+outputs:
+  is_contain:
+    description: "set true if git diff contains inputs.target_list"
+    value: ${{ steps.check_diff.outputs.is_contain }}
+runs:
+  using: "composite"
+  steps:
+    - name: "check diff"
+      shell: bash
+      id: check_diff
+      run: |
+          target_list=${{ inputs.target_list }}
+          github_head_ref=${{ inputs.head_ref }}
+          github_base_ref=${{ inputs.base_ref }}
+          diff_list=`git diff --name-only remotes/origin/$github_head_ref remotes/origin/$github_base_ref | sed -ze 's/\n/,/g'`
+          echo diff list is $diff_list
+          echo target list is $target_list
+
+          for target in ${target_list//,/ }; do
+            if [[ $diff_list == *"$target"* ]]; then
+              echo "target found"  
+              echo "::set-output name=is_contain::true"
+              exit 0
+            fi
+          done
+          echo "no target found "
+          echo "::set-output name=is_contain::false"
